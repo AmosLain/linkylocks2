@@ -1,19 +1,16 @@
 import { createBrowserClient } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
-/**
- * Browser-side Supabase client.
- * Use this in client components (hooks, forms, etc.).
- */
-export function createSupabaseBrowserClient() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+let browserClient: SupabaseClient | null = null;
+
+export function createClient() {
+  if (browserClient) return browserClient;
+
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const key =
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+  browserClient = createBrowserClient(url, key);
+  return browserClient;
 }
-
-/**
- * Backwards-compatible alias so existing imports like:
- * `import { createClient } from "@/lib/supabase/client";`
- * continue to work without changing other files.
- */
-export const createClient = createSupabaseBrowserClient;
