@@ -1,103 +1,90 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { Lock } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const router = useRouter();
-  const supabase = createClient();
+  const sp = useSearchParams();
+  const nextPath = useMemo(() => sp.get("next") || "/app", [sp]);
 
+  const supabase = useMemo(() => createClient(), []);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  useEffect(() => {
+    // If there's a broken refresh token lingering, middleware clears cookies,
+    // but client might still have old local state—force a clean read.
+    supabase.auth.getSession().catch(() => {});
+  }, [supabase]);
+
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError("");
+    setErr(null);
     setLoading(true);
 
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-      if (error) throw error;
+    setLoading(false);
 
-      router.push("/app");
-      router.refresh();
-    } catch (err: any) {
-      setError(err.message || "Failed to log in");
-    } finally {
-      setLoading(false);
+    if (error) {
+      setErr(error.message);
+      return;
     }
-  };
+
+    router.replace(nextPath);
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4">
-      <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
-        <div className="flex items-center gap-2 text-2xl font-bold text-indigo-600 mb-6 justify-center">
-          <Lock className="w-8 h-8" />
-          <span>LinkyLocks</span>
-        </div>
+    <div className="min-h-screen flex items-center justify-center p-6">
+      <div className="w-full max-w-md rounded-2xl border bg-white p-6 shadow-sm">
+        <h1 className="text-2xl font-semibold">Login</h1>
+        <p className="text-sm text-muted-foreground mt-1">Access your dashboard.</p>
 
-        <h2 className="text-2xl font-bold text-center mb-6">Welcome Back</h2>
+        <form onSubmit={onSubmit} className="mt-6 space-y-3">
+          <input
+            className="w-full rounded-xl border px-3 py-2"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            type="email"
+            autoComplete="email"
+            required
+          />
+          <input
+            className="w-full rounded-xl border px-3 py-2"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            type="password"
+            autoComplete="current-password"
+            required
+          />
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Password
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              required
-            />
-          </div>
-
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-              {error}
-            </div>
-          )}
+          {err && <div className="text-sm text-red-600">{err}</div>}
 
           <button
-            type="submit"
             disabled={loading}
-            className="w-full px-6 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 disabled:opacity-50"
+            className="w-full rounded-xl bg-black text-white py-2 disabled:opacity-60"
+            type="submit"
           >
-            {loading ? "Logging in..." : "Log In"}
+            {loading ? "Signing in..." : "Sign in"}
+          </button>
+
+          <button
+            type="button"
+            className="w-full rounded-xl border py-2"
+            onClick={() => router.push("/signup")}
+          >
+            Create account
           </button>
         </form>
-
-        <p className="text-center text-gray-600 mt-4">
-          Don&apos;t have an account?{" "}
-          <Link
-            href="/signup"
-            className="text-indigo-600 hover:text-indigo-800 font-semibold"
-          >
-            Sign Up
-          </Link>
-        </p>
       </div>
     </div>
   );
