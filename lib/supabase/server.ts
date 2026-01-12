@@ -1,35 +1,46 @@
-// lib/supabase/server.ts
-import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
-/**
- * Server-side Supabase client tied to the user's cookies/session.
- * Uses the public anon key and works with RLS (auth.uid()).
- *
- * Note: In Next.js 16, `cookies()` is async-typed, so we `await` it here.
- * This function itself is async, so whenever you use it, do:
- *   const supabase = await createSupabaseServerClient();
- */
-export async function createSupabaseServerClient() {
+type CookieToSet = {
+  name: string;
+  value: string;
+  options?: {
+    domain?: string;
+    path?: string;
+    expires?: Date;
+    httpOnly?: boolean;
+    maxAge?: number;
+    sameSite?: "lax" | "strict" | "none";
+    secure?: boolean;
+  };
+};
+
+export async function createClient() {
   const cookieStore = await cookies();
 
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
-        },
-        // For now we don't need to set/remove cookies on the server.
-        // If you later use server-side signIn/signOut, we can wire these up.
-        set() {
-          // no-op
-        },
-        remove() {
-          // no-op
-        },
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error(
+      "Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY"
+    );
+  }
+
+  return createServerClient(supabaseUrl, supabaseAnonKey, {
+    cookies: {
+      getAll() {
+        return cookieStore.getAll();
       },
+      setAll(cookiesToSet: CookieToSet[]) {
+        try {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            cookieStore.set(name, value, options);
+          });
+        } catch {
+          // Some environments can have read-only cookies.
+        }
+      }
     }
-  );
+  });
 }

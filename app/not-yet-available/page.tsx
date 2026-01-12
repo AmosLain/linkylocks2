@@ -1,23 +1,20 @@
-"use client";
-
-import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
+import NotYetAvailableClient from "./not-yet-available.client";
 
 export default function NotYetAvailablePage() {
-  const sp = useSearchParams();
-  const until = sp.get("until");
-
   return (
-    <main className="mx-auto max-w-xl p-8">
-      <h1 className="text-2xl font-bold">Not yet available</h1>
-      <p className="mt-3 text-gray-600">
-        This link is delayed. Please try again later.
+    <main style={{ padding: 24, maxWidth: 720, margin: "0 auto" }}>
+      <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 12 }}>
+        Not yet available
+      </h1>
+
+      <p style={{ marginBottom: 16 }}>
+        This link is scheduled to be revealed later.
       </p>
 
-      {until && (
-        <p className="mt-2 text-sm text-gray-500">
-          Available at: <span className="font-mono">{until}</span>
-        </p>
-      )}
+      <Suspense fallback={<p>Loading…</p>}>
+        <NotYetAvailableClient />
+      </Suspense>
     </main>
   );
 }
