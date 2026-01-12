@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Lock, LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -12,26 +12,44 @@ type User = {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const supabase = createClient();
+
+  // 🔒 CRITICAL FIX:
+  // Supabase client is memoized so it is created ONCE per tab.
+  // This prevents auth session flapping and redirect loops.
+  const supabase = useMemo(() => createClient(), []);
+
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
+    let mounted = true;
+
     const loadUser = async () => {
-      const { data } = await supabase.auth.getUser();
-      if (data.user) {
-        setUser({
-          id: data.user.id,
-          email: data.user.email ?? undefined,
-        });
+      const { data, error } = await supabase.auth.getUser();
+
+      if (!mounted) return;
+
+      // Do NOT redirect here.
+      // Redirect logic must live in server layout, not client.
+      if (error || !data.user) {
+        return;
       }
+
+      setUser({
+        id: data.user.id,
+        email: data.user.email ?? undefined,
+      });
     };
 
     loadUser();
+
+    return () => {
+      mounted = false;
+    };
   }, [supabase]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    router.push("/login");
+    router.replace("/login");
     router.refresh();
   };
 
