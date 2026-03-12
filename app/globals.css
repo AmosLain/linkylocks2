@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 html,
 body {
   height: 100%;
@@ -13,7 +15,12 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Minimal form readability (does NOT override backgrounds globally) */
+.dark body {
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+/* Minimal form readability */
 input, textarea, select {
   color: inherit;
 }
@@ -24,10 +31,21 @@ textarea::placeholder {
   opacity: 1;
 }
 
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: rgba(148, 163, 184, 1);
+}
+
 /* Autofill readable */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus {
   -webkit-text-fill-color: #111827;
   transition: background-color 5000s ease-in-out 0s;
+}
+
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #e2e8f0;
 }

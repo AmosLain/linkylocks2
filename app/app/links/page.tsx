@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   Shield
 } from "lucide-react";
+import ThemeToggle from "../../components/ThemeToggle";
 
 type LinkRow = {
   id?: string;
@@ -80,13 +81,13 @@ export default function LinksPage() {
   const [error, setError] = useState<string | null>(null);
   const [links, setLinks] = useState<LinkRow[]>([]);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [copiedToken, setCopiedToken] = useState<string | null>(null);
 
   async function loadLinks(isRefresh = false) {
     setError(null);
     isRefresh ? setRefreshing(true) : setLoading(true);
 
     try {
-      // ✅ Use getSession first (no scary "Auth session missing!" error)
       const { data: sessionData } = await supabase.auth.getSession();
       const session = sessionData?.session;
 
@@ -98,7 +99,6 @@ export default function LinksPage() {
       const user = session.user;
       setUserEmail(user.email ?? null);
 
-      // Fetch user links (assumes links.user_id exists)
       const { data, error: linksErr } = await supabase
         .from("links")
         .select("*")
@@ -109,7 +109,6 @@ export default function LinksPage() {
 
       setLinks((data as LinkRow[]) ?? []);
     } catch (e: any) {
-      // If anything auth-ish happens, just redirect to login
       const msg = e?.message ?? String(e);
       if (msg.toLowerCase().includes("auth session missing")) {
         router.push("/login");
@@ -124,7 +123,6 @@ export default function LinksPage() {
   useEffect(() => {
     loadLinks(false);
 
-    // Optional: if user logs in/out in another tab, keep UI correct
     const { data: sub } = supabase.auth.onAuthStateChange(() => {
       loadLinks(true);
     });
@@ -142,16 +140,20 @@ export default function LinksPage() {
     } catch {
       const ta = document.createElement("textarea");
       ta.value = url;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
       document.body.appendChild(ta);
       ta.select();
       document.execCommand("copy");
       document.body.removeChild(ta);
     }
+    setCopiedToken(token);
+    setTimeout(() => setCopiedToken((prev) => (prev === token ? null : prev)), 2000);
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="border-b border-slate-200 bg-white/80 backdrop-blur">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+      <div className="border-b border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-600 text-white shadow-sm">
@@ -160,26 +162,27 @@ export default function LinksPage() {
 
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-lg font-semibold text-slate-900">Your Links</h1>
-                <span className="inline-flex items-center gap-1 rounded-full border border-violet-200 bg-violet-50 px-2 py-0.5 text-xs font-medium text-violet-700">
+                <h1 className="text-lg font-semibold text-slate-900 dark:text-white">Your Links</h1>
+                <span className="inline-flex items-center gap-1 rounded-full border border-violet-200 dark:border-violet-700 bg-violet-50 dark:bg-violet-900/30 px-2 py-0.5 text-xs font-medium text-violet-700 dark:text-violet-300">
                   <Shield className="h-3.5 w-3.5" />
                   Free plan
                 </span>
               </div>
 
-              <p className="text-sm text-slate-600">
+              <p className="text-sm text-slate-600 dark:text-slate-400">
                 Manage secure links that expire by time or clicks.
-                {userEmail ? <span className="ml-2 text-slate-400">({userEmail})</span> : null}
+                {userEmail ? <span className="ml-2 text-slate-400 dark:text-slate-500">({userEmail})</span> : null}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             <button
               onClick={() => loadLinks(true)}
               className={cn(
-                "inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition",
-                "hover:bg-slate-50 active:scale-[0.99]",
+                "inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 shadow-sm transition",
+                "hover:bg-slate-50 dark:hover:bg-slate-600 active:scale-[0.99]",
                 refreshing && "opacity-70"
               )}
               disabled={refreshing}
@@ -202,7 +205,7 @@ export default function LinksPage() {
 
       <div className="mx-auto max-w-6xl px-4 py-6">
         {error ? (
-          <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-rose-800">
+          <div className="rounded-2xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-900/30 p-4 text-rose-800 dark:text-rose-300">
             <div className="font-semibold">Something went wrong</div>
             <div className="mt-1 text-sm">{error}</div>
             <div className="mt-3">
@@ -219,13 +222,13 @@ export default function LinksPage() {
         {loading ? (
           <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="h-4 w-48 animate-pulse rounded bg-slate-100" />
-                <div className="mt-3 h-3 w-full animate-pulse rounded bg-slate-100" />
-                <div className="mt-2 h-3 w-3/4 animate-pulse rounded bg-slate-100" />
+              <div key={i} className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-sm">
+                <div className="h-4 w-48 animate-pulse rounded bg-slate-100 dark:bg-slate-700" />
+                <div className="mt-3 h-3 w-full animate-pulse rounded bg-slate-100 dark:bg-slate-700" />
+                <div className="mt-2 h-3 w-3/4 animate-pulse rounded bg-slate-100 dark:bg-slate-700" />
                 <div className="mt-4 flex gap-2">
-                  <div className="h-9 w-28 animate-pulse rounded-xl bg-slate-100" />
-                  <div className="h-9 w-28 animate-pulse rounded-xl bg-slate-100" />
+                  <div className="h-9 w-28 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-700" />
+                  <div className="h-9 w-28 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-700" />
                 </div>
               </div>
             ))}
@@ -233,12 +236,12 @@ export default function LinksPage() {
         ) : null}
 
         {!loading && !error && links.length === 0 ? (
-          <div className="mt-10 rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-50 text-violet-700">
+          <div className="mt-10 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-10 text-center shadow-sm">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300">
               <ShieldCheck className="h-6 w-6" />
             </div>
-            <h2 className="mt-4 text-xl font-semibold text-slate-900">No links yet</h2>
-            <p className="mt-2 text-slate-600">Create your first secure link in seconds.</p>
+            <h2 className="mt-4 text-xl font-semibold text-slate-900 dark:text-white">No links yet</h2>
+            <p className="mt-2 text-slate-600 dark:text-slate-400">Create your first secure link in seconds.</p>
             <button
               onClick={() => router.push("/app/new")}
               className="mt-5 inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-violet-700"
@@ -258,36 +261,36 @@ export default function LinksPage() {
               return (
                 <div
                   key={link.token}
-                  className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md"
+                  className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-sm transition hover:shadow-md"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="truncate text-base font-semibold text-slate-900">
+                        <h3 className="truncate text-base font-semibold text-slate-900 dark:text-white">
                           {link.label?.trim() ? link.label : `Link ${link.token}`}
                         </h3>
 
                         {expired ? (
-                          <span className="rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
+                          <span className="rounded-full border border-slate-200 dark:border-slate-600 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 text-xs font-medium text-slate-700 dark:text-slate-300">
                             Expired
                           </span>
                         ) : notYet ? (
-                          <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800">
+                          <span className="rounded-full border border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 text-xs font-medium text-amber-800 dark:text-amber-300">
                             Scheduled
                           </span>
                         ) : (
-                          <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-800">
+                          <span className="rounded-full border border-emerald-200 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:text-emerald-300">
                             Active
                           </span>
                         )}
                       </div>
 
-                      <p className="mt-1 truncate text-sm text-slate-600">
-                        <span className="font-medium text-slate-700">To:</span>{" "}
+                      <p className="mt-1 truncate text-sm text-slate-600 dark:text-slate-400">
+                        <span className="font-medium text-slate-700 dark:text-slate-300">To:</span>{" "}
                         {link.target_url}
                       </p>
 
-                      <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-600">
+                      <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-600 dark:text-slate-400">
                         <span className="inline-flex items-center gap-1">
                           <MousePointerClick className="h-3.5 w-3.5" />
                           {typeof link.max_clicks === "number" && link.max_clicks > 0
@@ -302,7 +305,7 @@ export default function LinksPage() {
                       </div>
                     </div>
 
-                    <div className="shrink-0 rounded-xl bg-slate-50 px-2 py-1 text-xs font-mono text-slate-700">
+                    <div className="shrink-0 rounded-xl bg-slate-50 dark:bg-slate-700 px-2 py-1 text-xs font-mono text-slate-700 dark:text-slate-300">
                       {link.token}
                     </div>
                   </div>
@@ -310,18 +313,23 @@ export default function LinksPage() {
                   <div className="mt-4 flex flex-wrap gap-2">
                     <button
                       onClick={() => copyShortUrl(link.token)}
-                      className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 active:scale-[0.99]"
+                      className={cn(
+                        "inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium shadow-sm active:scale-[0.99] transition-colors",
+                        copiedToken === link.token
+                          ? "border-emerald-300 dark:border-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300"
+                          : "border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600"
+                      )}
                       title="Copy short link"
                     >
                       <Copy className="h-4 w-4" />
-                      Copy
+                      {copiedToken === link.token ? "Copied!" : "Copy"}
                     </button>
 
                     <a
                       href={`/l/${link.token}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 active:scale-[0.99]"
+                      className="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-600 active:scale-[0.99]"
                       title="Open short link"
                     >
                       <ExternalLink className="h-4 w-4" />
@@ -341,7 +349,7 @@ export default function LinksPage() {
                   </div>
 
                   {notYet && link.reveal_at ? (
-                    <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                    <div className="mt-3 rounded-xl border border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 px-3 py-2 text-xs text-amber-900 dark:text-amber-300">
                       Scheduled reveal:{" "}
                       <span className="font-medium">{formatDateTime(link.reveal_at)}</span>
                     </div>
@@ -354,7 +362,7 @@ export default function LinksPage() {
 
         {!loading && !error ? (
           <div className="mt-8 text-center text-xs text-slate-500">
-            Tip: Free plan defaults to <span className="font-medium text-slate-700">3 clicks</span>.
+            Tip: Free plan defaults to <span className="font-medium text-slate-700 dark:text-slate-300">3 clicks</span>.
           </div>
         ) : null}
       </div>

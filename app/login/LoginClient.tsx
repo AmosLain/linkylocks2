@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 import { createBrowserClient } from "@supabase/ssr";
+import ThemeToggle from "../components/ThemeToggle";
 
 function getSupabaseKey() {
   return (
@@ -63,24 +64,27 @@ export default function LoginClient() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6">
-      <div className="w-full max-w-md rounded-xl border p-6">
-        <h1 className="text-xl font-semibold">Login</h1>
+    <div className="min-h-screen flex items-center justify-center p-6 bg-gray-50 dark:bg-slate-900">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
+      <div className="w-full max-w-md rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6">
+        <h1 className="text-xl font-semibold dark:text-white">Login</h1>
 
-        <p className="mt-2 text-sm opacity-80">
-          After login you’ll be sent to:{" "}
+        <p className="mt-2 text-sm opacity-80 dark:text-slate-300">
+          After login you&apos;ll be sent to:{" "}
           <span className="font-mono">{nextUrl}</span>
         </p>
 
         {msg ? (
-          <div className="mt-4 rounded-md border p-3 text-sm">{msg}</div>
+          <div className="mt-4 rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/30 p-3 text-sm text-red-700 dark:text-red-400">{msg}</div>
         ) : null}
 
         <form className="mt-6 space-y-3" onSubmit={onSubmit}>
           <div className="space-y-1">
-            <label className="text-sm">Email</label>
+            <label className="text-sm dark:text-slate-300">Email</label>
             <input
-              className="w-full rounded-md border px-3 py-2 text-sm"
+              className="w-full rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm dark:text-white"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               autoComplete="email"
@@ -90,9 +94,9 @@ export default function LoginClient() {
           </div>
 
           <div className="space-y-1">
-            <label className="text-sm">Password</label>
+            <label className="text-sm dark:text-slate-300">Password</label>
             <input
-              className="w-full rounded-md border px-3 py-2 text-sm"
+              className="w-full rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm dark:text-white"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
@@ -102,17 +106,17 @@ export default function LoginClient() {
           </div>
 
           <button
-            className="w-full rounded-md border px-4 py-2 text-sm"
+            className="w-full rounded-md bg-indigo-600 text-white px-4 py-2 text-sm hover:bg-indigo-700 disabled:opacity-60"
             disabled={loading}
             type="submit"
           >
-            {loading ? "Signing in…" : "Log in"}
+            {loading ? "Signing in\u2026" : "Log in"}
           </button>
         </form>
 
-        <div className="mt-4 text-sm">
-          Don’t have an account?{" "}
-          <a className="underline" href={`/signup?next=${encodeURIComponent(nextUrl)}`}>
+        <div className="mt-4 text-sm dark:text-slate-400">
+          Don&apos;t have an account?{" "}
+          <a className="underline text-indigo-600 dark:text-indigo-400" href={`/signup?next=${encodeURIComponent(nextUrl)}`}>
             Sign up
           </a>
         </div>

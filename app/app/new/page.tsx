@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import ThemeToggle from "../../components/ThemeToggle";
 
 function genToken(len = 10) {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
@@ -84,13 +85,11 @@ export default function NewLinkPage() {
 
   const maxClicksNum = useMemo(() => toIntOrNull(maxClicks), [maxClicks]);
 
-  // UI paywall checks (DB still enforces)
   const paywallReason = useMemo(() => {
     if (plan !== "free") return null;
-    if (isPhantom) return null; // phantom forces 1 click, always allowed
+    if (isPhantom) return null;
 
-    // free plan: max clicks must be 1–3
-    if (maxClicks.trim() === "") return null; // will default to 3
+    if (maxClicks.trim() === "") return null;
     if (maxClicksNum === null) return "Max clicks must be a whole number (1 or more).";
     if (maxClicksNum > 3) return "More than 3 clicks is a Pro feature.";
     return null;
@@ -105,7 +104,6 @@ export default function NewLinkPage() {
     if (!url) return setErr("Target URL is required.");
     if (!/^https?:\/\//i.test(url)) return setErr("URL must start with http:// or https://");
 
-    // Hard-stop attempts that will violate RLS for free plan
     if (paywallReason) {
       setUpgradeHint(paywallReason);
       return;
@@ -139,10 +137,6 @@ export default function NewLinkPage() {
       if (r >= x) return setErr("Reveal time must be before expiry time.");
     }
 
-    // Final enforcement consistent with RLS:
-    // - phantom -> 1
-    // - free -> default to 3 if empty; must be 1–3 if provided
-    // - pro -> allow null (unlimited)
     const finalMaxClicks = isPhantom ? 1 : plan === "pro" ? maxClicksNum : maxClicksNum ?? 3;
 
     setLoading(true);
@@ -179,7 +173,6 @@ export default function NewLinkPage() {
           return;
         }
 
-        // If RLS blocks it anyway, show a clean upsell message instead of scary error
         if (
           typeof insErr?.message === "string" &&
           insErr.message.toLowerCase().includes("row-level security")
@@ -203,58 +196,61 @@ export default function NewLinkPage() {
     <main className="mx-auto max-w-2xl px-4 py-10">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-indigo-600">New Link</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-3xl font-extrabold tracking-tight text-indigo-600 dark:text-indigo-400">New Link</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
             Create a link that expires by time, clicks, or both. (Plan:{" "}
             <span className="font-semibold">{plan}</span>)
           </p>
         </div>
-        <a
-          href="/app/links"
-          className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900"
-        >
-          ← Back
-        </a>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <a
+            href="/app/links"
+            className="rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-4 py-2 text-sm text-gray-900 dark:text-slate-200"
+          >
+            &larr; Back
+          </a>
+        </div>
       </div>
 
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+      <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm">
         <form onSubmit={onCreate} className="space-y-4">
           {err && (
-            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/30 px-4 py-3 text-sm text-red-700 dark:text-red-400">
               {err}
             </div>
           )}
 
           {upgradeHint && (
-            <div className="rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-800">
+            <div className="rounded-lg border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/30 px-4 py-3 text-sm text-indigo-800 dark:text-indigo-300">
               <div className="font-semibold">Pro feature</div>
               <div className="mt-1">{upgradeHint}</div>
             </div>
           )}
 
           <div>
-            <label className="mb-1 block text-sm font-semibold text-gray-800">Label (optional)</label>
+            <label className="mb-1 block text-sm font-semibold text-gray-800 dark:text-slate-200">Label (optional)</label>
             <input
               value={label}
               onChange={(e) => setLabel(e.target.value)}
               placeholder="e.g. My offer link"
-              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
+              className="w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-400"
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-semibold text-gray-800">Target URL</label>
+            <label className="mb-1 block text-sm font-semibold text-gray-800 dark:text-slate-200">Target URL</label>
             <input
               value={targetUrl}
               onChange={(e) => setTargetUrl(e.target.value)}
               placeholder="https://example.com"
-              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400"
+              className="w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-400"
             />
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <label className="mb-1 block text-sm font-semibold text-gray-800">Max Clicks (optional)</label>
+              <label className="mb-1 block text-sm font-semibold text-gray-800 dark:text-slate-200">Max Clicks (optional)</label>
               <input
                 value={maxClicks}
                 onChange={(e) => {
@@ -262,35 +258,35 @@ export default function NewLinkPage() {
                   setUpgradeHint(null);
                 }}
                 inputMode="numeric"
-                placeholder={plan === "free" ? "1–3" : "Leave empty = unlimited"}
-                className={`w-full rounded-lg border bg-white px-3 py-2 text-gray-900 ${
-                  paywallReason && plan === "free" ? "border-indigo-400" : "border-gray-300"
+                placeholder={plan === "free" ? "1\u20133" : "Leave empty = unlimited"}
+                className={`w-full rounded-lg border bg-white dark:bg-slate-700 px-3 py-2 text-gray-900 dark:text-white ${
+                  paywallReason && plan === "free" ? "border-indigo-400" : "border-gray-300 dark:border-slate-600"
                 }`}
               />
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-gray-500 dark:text-slate-400">
                 {plan === "pro"
                   ? "Leave empty = unlimited clicks"
-                  : "Free plan: 1–3 clicks. Leave empty defaults to 3."}
+                  : "Free plan: 1\u20133 clicks. Leave empty defaults to 3."}
               </p>
               {paywallReason && plan === "free" && (
-                <p className="mt-1 text-xs font-semibold text-indigo-700">{paywallReason}</p>
+                <p className="mt-1 text-xs font-semibold text-indigo-700 dark:text-indigo-400">{paywallReason}</p>
               )}
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-semibold text-gray-800">Expiry (optional)</label>
+              <label className="mb-1 block text-sm font-semibold text-gray-800 dark:text-slate-200">Expiry (optional)</label>
               <input
                 type="datetime-local"
                 value={expiresAtLocal}
                 onChange={(e) => setExpiresAtLocal(e.target.value)}
                 min={getMinDateTime()}
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900"
+                className="w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-gray-900 dark:text-white"
               />
-              <p className="mt-1 text-xs text-gray-500">Leave empty = never expires</p>
+              <p className="mt-1 text-xs text-gray-500 dark:text-slate-400">Leave empty = never expires</p>
             </div>
           </div>
 
-          <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+          <div className="rounded-lg border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700/50 px-4 py-3">
             <label className="flex items-center gap-3">
               <input
                 type="checkbox"
@@ -302,29 +298,29 @@ export default function NewLinkPage() {
                 className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
               />
               <div>
-                <div className="text-sm font-semibold text-gray-900">Self-destruct link (1 click)</div>
-                <div className="text-xs text-gray-500">Overrides max clicks to 1.</div>
+                <div className="text-sm font-semibold text-gray-900 dark:text-white">Self-destruct link (1 click)</div>
+                <div className="text-xs text-gray-500 dark:text-slate-400">Overrides max clicks to 1.</div>
               </div>
             </label>
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-semibold text-gray-800">Reveal At (optional)</label>
+            <label className="mb-1 block text-sm font-semibold text-gray-800 dark:text-slate-200">Reveal At (optional)</label>
             <input
               type="datetime-local"
               value={revealAtLocal}
               onChange={(e) => setRevealAtLocal(e.target.value)}
               min={getMinDateTime()}
-              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900"
+              className="w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-gray-900 dark:text-white"
             />
-            <p className="mt-1 text-xs text-gray-500">Leave empty = available immediately</p>
+            <p className="mt-1 text-xs text-gray-500 dark:text-slate-400">Leave empty = available immediately</p>
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-semibold text-gray-800">
+            <label className="mb-1 block text-sm font-semibold text-gray-800 dark:text-slate-200">
               Link Password (optional)
               {plan === "free" && (
-                <span className="ml-2 text-xs font-normal text-indigo-600">Pro feature</span>
+                <span className="ml-2 text-xs font-normal text-indigo-600 dark:text-indigo-400">Pro feature</span>
               )}
             </label>
             <input
@@ -333,7 +329,7 @@ export default function NewLinkPage() {
               onChange={(e) => setLinkPassword(e.target.value)}
               placeholder={plan === "free" ? "Upgrade to Pro to use" : "Leave empty = no password"}
               disabled={plan === "free"}
-              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 disabled:opacity-50 disabled:bg-gray-50"
+              className="w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-400 disabled:opacity-50 disabled:bg-gray-50 dark:disabled:bg-slate-800"
             />
           </div>
 

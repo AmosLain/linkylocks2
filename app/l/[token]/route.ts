@@ -1,5 +1,13 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+
+// Use service role client to bypass RLS — visitors are not link owners,
+// so anon-key updates get silently blocked by row-level security.
+function createServiceClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  return createSupabaseClient(url, key);
+}
 
 export async function GET(
   request: Request,
@@ -12,7 +20,7 @@ export async function GET(
       return NextResponse.json({ error: "Missing token" }, { status: 400 });
     }
 
-    const supabase = await createClient();
+    const supabase = createServiceClient();
 
     const { data: link, error } = await supabase
       .from("links")
@@ -51,19 +59,23 @@ export async function GET(
       );
     }
 
-    if (typeof link.max_clicks === "number" && link.max_clicks > 0) {
-      const clickCount = Number(link.click_count || 0);
+    // Always increment click count
+    const clickCount = Number(link.click_count || 0);
+    const newCount = clickCount + 1;
+    const updates: Record<string, unknown> = { click_count: newCount };
 
+    // Check if link should expire by click count
+    if (typeof link.max_clicks === "number" && link.max_clicks > 0) {
       if (clickCount >= link.max_clicks) {
         await supabase.from("links").update({ is_active: false }).eq("token", token);
         return NextResponse.redirect(new URL("/expired", request.url));
       }
-
-      await supabase
-        .from("links")
-        .update({ click_count: clickCount + 1 })
-        .eq("token", token);
+      if (newCount >= link.max_clicks) {
+        updates.is_active = false;
+      }
     }
+
+    await supabase.from("links").update(updates).eq("token", token);
 
     const targetUrl = link.target_url as string | null;
     if (!targetUrl) {
