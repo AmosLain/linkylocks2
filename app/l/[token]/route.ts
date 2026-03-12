@@ -45,6 +45,12 @@ export async function GET(
       }
     }
 
+    if (link.password) {
+      return NextResponse.redirect(
+        new URL(`/password?token=${encodeURIComponent(token)}`, request.url)
+      );
+    }
+
     if (typeof link.max_clicks === "number" && link.max_clicks > 0) {
       const clickCount = Number(link.click_count || 0);
 

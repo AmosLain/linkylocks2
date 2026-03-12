@@ -51,6 +51,7 @@ export default function NewLinkPage() {
   const [expiresAtLocal, setExpiresAtLocal] = useState("");
   const [revealAtLocal, setRevealAtLocal] = useState("");
   const [isPhantom, setIsPhantom] = useState(false);
+  const [linkPassword, setLinkPassword] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -167,6 +168,7 @@ export default function NewLinkPage() {
           max_clicks: finalMaxClicks,
           expires_at: expiresAtIso,
           reveal_at: revealAtIso,
+          password: linkPassword.trim() || null,
         };
 
         const { error: insErr } = await supabase.from("links").insert(payload);
@@ -316,6 +318,23 @@ export default function NewLinkPage() {
               className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900"
             />
             <p className="mt-1 text-xs text-gray-500">Leave empty = available immediately</p>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-semibold text-gray-800">
+              Link Password (optional)
+              {plan === "free" && (
+                <span className="ml-2 text-xs font-normal text-indigo-600">Pro feature</span>
+              )}
+            </label>
+            <input
+              type="password"
+              value={linkPassword}
+              onChange={(e) => setLinkPassword(e.target.value)}
+              placeholder={plan === "free" ? "Upgrade to Pro to use" : "Leave empty = no password"}
+              disabled={plan === "free"}
+              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 disabled:opacity-50 disabled:bg-gray-50"
+            />
           </div>
 
           <button
