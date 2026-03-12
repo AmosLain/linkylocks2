@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { Lock, Clock, Eye } from "lucide-react";
 import ThemeToggle from "./components/ThemeToggle";
+import Footer from "./components/Footer";
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-900 dark:to-slate-800">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-900 dark:to-slate-800">
       <nav className="container mx-auto px-4 py-6 flex justify-between items-center">
         <div className="flex items-center gap-2 text-2xl font-bold text-indigo-600 dark:text-indigo-400">
           <Lock className="w-8 h-8" />
@@ -76,6 +77,8 @@ export default function HomePage() {
           </div>
         </div>
       </div>
+
+      <Footer />
     </div>
   );
 }
