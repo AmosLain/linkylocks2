@@ -19,7 +19,9 @@ export default function LoginClient() {
   const searchParams = useSearchParams();
 
   const nextUrl = useMemo(() => {
-    return searchParams.get("next") || searchParams.get("redirect") || "/app";
+    const raw = searchParams.get("next") || searchParams.get("redirect") || "/app";
+    // Only allow relative paths to prevent open redirect
+    return raw.startsWith("/") ? raw : "/app";
   }, [searchParams]);
 
   const [email, setEmail] = useState("");

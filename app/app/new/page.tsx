@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import ThemeToggle from "../../components/ThemeToggle";
+import bcrypt from "bcryptjs";
 
 function genToken(len = 10) {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
@@ -152,6 +153,9 @@ export default function NewLinkPage() {
       for (let attempt = 0; attempt < 3; attempt++) {
         const token = genToken(10);
 
+        const rawPassword = linkPassword.trim() || null;
+        const hashedPassword = rawPassword ? await bcrypt.hash(rawPassword, 10) : null;
+
         const payload = {
           token,
           label: label.trim() || null,
@@ -162,7 +166,7 @@ export default function NewLinkPage() {
           max_clicks: finalMaxClicks,
           expires_at: expiresAtIso,
           reveal_at: revealAtIso,
-          password: linkPassword.trim() || null,
+          password: hashedPassword,
         };
 
         const { error: insErr } = await supabase.from("links").insert(payload);

@@ -1,8 +1,15 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import bcrypt from "bcryptjs";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   try {
+    const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+    if (!checkRateLimit(ip)) {
+      return NextResponse.json({ error: "Too many attempts. Please try again later." }, { status: 429 });
+    }
+
     const { token, password } = await request.json();
 
     if (!token || !password) {
@@ -33,7 +40,8 @@ export async function POST(request: Request) {
       }
     }
 
-    if (link.password !== password) {
+    const passwordValid = await bcrypt.compare(password, link.password ?? "");
+    if (!passwordValid) {
       return NextResponse.json({ error: "Wrong password." }, { status: 401 });
     }
 
@@ -49,10 +57,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ url: link.target_url });
-  } catch (e: any) {
-    return NextResponse.json(
-      { error: "Server error", details: e?.message ?? String(e) },
-      { status: 500 }
-    );
+  } catch {
+    return NextResponse.json({ error: "Server error." }, { status: 500 });
   }
 }
